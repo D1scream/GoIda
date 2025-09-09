@@ -1,0 +1,15 @@
+# Build artifacts
+server
+server_unix
+go.sum
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
