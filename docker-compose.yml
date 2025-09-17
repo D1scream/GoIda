@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -31,7 +31,7 @@ services:
       --log-level=info
       --driver=org.postgresql.Driver
       --classpath=lib/postgresql-42.6.0.jar
-      --url=jdbc:postgresql://db:${DB_PORT:-5432}/${DB_NAME:-goida}
+      --url=jdbc:postgresql://db:5432/${DB_NAME:-goida}
       --username=${DB_USER:-postgres}
       --password=${DB_PASSWORD:-postgres}
       --changeLogFile=migrations/changelog-master.xml
@@ -47,7 +47,7 @@ services:
         condition: service_completed_successfully
     environment:
       DB_HOST: db
-      DB_PORT: ${DB_PORT:-5432}
+      DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-goida}

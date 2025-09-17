@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	Database DatabaseConfig
-	Server   ServerConfig
-	Logging  LoggingConfig
+	Database  DatabaseConfig
+	Server    ServerConfig
+	Logging   LoggingConfig
+	JWTSecret string
 }
 
 type DatabaseConfig struct {
@@ -32,7 +33,6 @@ type LoggingConfig struct {
 }
 
 func Load() (*Config, error) {
-	// Загружаем .env файл
 	if err := godotenv.Load(); err != nil {
 		logrus.Warn("Warning: .env file not found")
 	}
@@ -54,6 +54,7 @@ func Load() (*Config, error) {
 		Logging: LoggingConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
+		JWTSecret: getEnv("JWT_SECRET", "your-secret-key"),
 	}, nil
 }
 

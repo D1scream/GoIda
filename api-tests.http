@@ -1,20 +1,109 @@
-
-GET http://localhost:8080/users
-
-POST http://localhost:8080/users
+### Регистрация пользователя
+POST http://localhost:8080/api/users
 Content-Type: application/json
+
 {
-  "email": "test@example.com",
+  "email": "newuser@example.com",
+  "name": "New User"
+}
+
+### Авторизация по логину (админ)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "password"
+}
+
+### Авторизация по логину (пользователь)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "login": "user",
+  "password": "password"
+}
+
+### Получение профиля (требует авторизации)
+GET http://localhost:8080/api/auth/profile
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+### Создание статьи (требует авторизации)
+POST http://localhost:8080/api/articles
+Content-Type: application/json
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+{
+  "title": "Моя первая статья",
+  "content": "Это содержимое моей первой статьи для тестирования системы."
+}
+
+### Получение списка статей (публичный)
+GET http://localhost:8080/api/articles
+
+### Получение конкретной статьи (публичный)
+GET http://localhost:8080/api/articles/1
+
+### Обновление статьи (требует авторизации, только автор или админ)
+PUT http://localhost:8080/api/articles/1
+Content-Type: application/json
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+{
+  "title": "Обновленный заголовок",
+  "content": "Обновленное содержимое статьи."
+}
+
+### Удаление статьи (требует авторизации, только автор или админ)
+DELETE http://localhost:8080/api/articles/1
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+### Получение статей пользователя (публичный)
+GET http://localhost:8080/api/users/1/articles
+
+### Получение информации о пользователе (требует авторизации)
+GET http://localhost:8080/api/users/1
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+
+### Получение списка пользователей (только для админов)
+GET http://localhost:8080/api/admin/users
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+### Тест валидации - некорректный email
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
   "name": "Test User"
 }
 
-GET http://localhost:8080/users/1
-
-PUT http://localhost:8080/users/1
+### Тест валидации - пустое имя
+POST http://localhost:8080/api/users
 Content-Type: application/json
-{
-  "email": "updated@example.com",
-  "name": "Updated User"
-}ы
 
-DELETE http://localhost:8080/users/1
+{
+  "email": "user3@example.com",
+  "name": ""
+}
+
+### Получение списка ролей (только для админов)
+GET http://localhost:8080/api/admin/roles
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+### Получение конкретной роли (только для админов)
+GET http://localhost:8080/api/admin/roles/1
+Authorization: Bearer ADMIN_JWT_TOKEN
+
+### Тест доступа без авторизации
+GET http://localhost:8080/api/auth/profile
+
+### Тест доступа с неверным токеном
+GET http://localhost:8080/api/auth/profile
+Authorization: Bearer invalid_token
+
+### Тест доступа обычного пользователя к админским эндпоинтам
+GET http://localhost:8080/api/admin/users
+Authorization: Bearer USER_JWT_TOKEN

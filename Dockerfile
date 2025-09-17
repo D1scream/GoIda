@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go mod tidy && CGO_ENABLED=0 go build -o main ./cmd/server
+RUN go mod tidy && CGO_ENABLED=0 go build -o main .
 
 FROM alpine:latest
 

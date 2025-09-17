@@ -11,6 +11,7 @@ type UserRepository interface {
 	Create(user *models.User) error
 	GetByID(id int) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
+	GetUserByEmail(email string) (*models.User, error)
 	Update(user *models.User) error
 	Delete(id int) error
 	List(limit, offset int) ([]*models.User, error)
@@ -26,11 +27,11 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepository) Create(user *models.User) error {
 	query := `
-		INSERT INTO users (email, name, created_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
+		INSERT INTO users (email, name, role_id, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at`
 
-	err := r.db.QueryRow(query, user.Email, user.Name).Scan(
+	err := r.db.QueryRow(query, user.Email, user.Name, user.RoleID).Scan(
 		&user.ID, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -41,14 +42,17 @@ func (r *userRepository) Create(user *models.User) error {
 }
 
 func (r *userRepository) GetByID(id int) (*models.User, error) {
-	user := &models.User{}
+	user := &models.User{Role: &models.Role{}}
 	query := `
-		SELECT id, email, name, created_at, updated_at
-		FROM users
-		WHERE id = $1`
+		SELECT u.id, u.email, u.name, u.role_id, u.created_at, u.updated_at,
+		       r.id, r.name, r.description, r.created_at, r.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.Name, &user.RoleID, &user.CreatedAt, &user.UpdatedAt,
+		&user.Role.ID, &user.Role.Name, &user.Role.Description, &user.Role.CreatedAt, &user.Role.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -61,14 +65,17 @@ func (r *userRepository) GetByID(id int) (*models.User, error) {
 }
 
 func (r *userRepository) GetByEmail(email string) (*models.User, error) {
-	user := &models.User{}
+	user := &models.User{Role: &models.Role{}}
 	query := `
-		SELECT id, email, name, created_at, updated_at
-		FROM users
-		WHERE email = $1`
+		SELECT u.id, u.email, u.name, u.role_id, u.created_at, u.updated_at,
+		       r.id, r.name, r.description, r.created_at, r.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.email = $1`
 
 	err := r.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.Name, &user.RoleID, &user.CreatedAt, &user.UpdatedAt,
+		&user.Role.ID, &user.Role.Name, &user.Role.Description, &user.Role.CreatedAt, &user.Role.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -80,13 +87,17 @@ func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
+func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
+	return r.GetByEmail(email)
+}
+
 func (r *userRepository) Update(user *models.User) error {
 	query := `
-		UPDATE users
-		SET email = $1, name = $2, updated_at = NOW()
-		WHERE id = $3`
+		UPDATE users 
+		SET email = $1, name = $2, role_id = $3, updated_at = NOW()
+		WHERE id = $4`
 
-	result, err := r.db.Exec(query, user.Email, user.Name, user.ID)
+	result, err := r.db.Exec(query, user.Email, user.Name, user.RoleID, user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
@@ -125,9 +136,11 @@ func (r *userRepository) Delete(id int) error {
 
 func (r *userRepository) List(limit, offset int) ([]*models.User, error) {
 	query := `
-		SELECT id, email, name, created_at, updated_at
-		FROM users
-		ORDER BY created_at DESC
+		SELECT u.id, u.email, u.name, u.role_id, u.created_at, u.updated_at,
+		       r.id, r.name, r.description, r.created_at, r.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		ORDER BY u.created_at DESC
 		LIMIT $1 OFFSET $2`
 
 	rows, err := r.db.Query(query, limit, offset)
@@ -138,9 +151,10 @@ func (r *userRepository) List(limit, offset int) ([]*models.User, error) {
 
 	var users []*models.User
 	for rows.Next() {
-		user := &models.User{}
+		user := &models.User{Role: &models.Role{}}
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt,
+			&user.ID, &user.Email, &user.Name, &user.RoleID, &user.CreatedAt, &user.UpdatedAt,
+			&user.Role.ID, &user.Role.Name, &user.Role.Description, &user.Role.CreatedAt, &user.Role.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
