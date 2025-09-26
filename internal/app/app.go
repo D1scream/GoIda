@@ -12,7 +12,7 @@ import (
 	"goida/internal/middleware"
 	"goida/internal/repository"
 	"goida/internal/services"
-	"goida/pkg/database"
+	"goida/internal/database"
 )
 
 type App struct {
@@ -33,14 +33,14 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
+	// Инициализируем приложение
 	app := &App{
 		config: cfg,
 		db:     db,
 		router: mux.NewRouter(),
 	}
 
-	// Инициализируем приложение
 	if err := app.setup(); err != nil {
 		return nil, err
 	}

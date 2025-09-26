@@ -10,24 +10,19 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-goida}"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
 
   liquibase:
     image: liquibase/liquibase:4.27
     container_name: goida-liquibase
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
     volumes:
       - ./migrations:/liquibase/changelog/migrations
       - ./lib:/liquibase/changelog/lib
     working_dir: /liquibase/changelog
     command: >
-      --defaultsFile=
+      --defaultsFile=migrations/liquibase.properties
       --log-level=info
       --driver=org.postgresql.Driver
       --classpath=lib/postgresql-42.6.0.jar
@@ -42,7 +37,7 @@ services:
     container_name: goida-app
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       liquibase:
         condition: service_completed_successfully
     environment:
