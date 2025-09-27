@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>GoIda</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1>GoIda</h1>
+            </header>
+
+            <section class="auth-section">
+                <h2>Авторизация</h2>
+                <div class="auth-tabs">
+                    <button :class="['tab-button', { active: !showRegisterForm }]" @click="showRegisterForm = false">Вход</button>
+                    <button :class="['tab-button', { active: showRegisterForm }]" @click="showRegisterForm = true">Регистрация</button>
+                </div>
+                <div v-if="!showRegisterForm" class="auth-form">
+                    <input type="text" v-model="loginForm.login" placeholder="Логин" @keyup.enter="login">
+                    <input type="password" v-model="loginForm.password" placeholder="Пароль" @keyup.enter="login">
+                    <button @click="login" :disabled="isLoading">Войти</button>
+                    <button @click="logout">Выйти</button>
+                </div>
+                <div v-if="showRegisterForm" class="auth-form">
+                    <input type="text" v-model="registerForm.name" placeholder="Имя" @keyup.enter="register">
+                    <input type="email" v-model="registerForm.email" placeholder="Email" @keyup.enter="register">
+                    <input type="text" v-model="registerForm.login" placeholder="Логин" @keyup.enter="register">
+                    <input type="password" v-model="registerForm.password" placeholder="Пароль" @keyup.enter="register">
+                    <input type="password" v-model="registerForm.confirmPassword" placeholder="Подтвердите пароль" @keyup.enter="register">
+                    <button @click="register" :disabled="isLoading">Зарегистрироваться</button>
+                </div>
+                <div v-if="authStatus" :class="['status', authStatus.type]">{{ authStatus.message }}</div>
+            </section>
+
+            <section class="articles-section">
+                <h2>Статьи</h2>
+                <div class="create-article" v-if="isAuthenticated">
+                    <h3>Создать статью</h3>
+                    <input type="text" v-model="articleForm.title" placeholder="Заголовок статьи">
+                    <textarea v-model="articleForm.content" placeholder="Содержимое статьи"></textarea>
+                    <button @click="createArticle" :disabled="isLoading">Создать статью</button>
+                </div>
+                <div class="articles-list">
+                    <h3>Список статей</h3>
+                    <button @click="loadArticles" :disabled="isLoading">Обновить список</button>
+                    <div v-if="articles.length === 0" class="no-data">Статьи не найдены</div>
+                    <div v-else>
+                        <article-card v-for="article in articles" :key="article.id" :article="article" :current-user="currentUser" @delete="deleteArticle" @edit="editArticle" />
+                    </div>
+                </div>
+            </section>
+            <section class="users-section" v-if="isAdmin">
+                <h2>Пользователи</h2>
+                <button @click="loadUsers" :disabled="isLoading">Загрузить пользователей</button>
+                <div v-if="users.length === 0" class="no-data">Пользователи не найдены</div>
+                <div v-else>
+                    <user-card v-for="user in users" :key="user.id" :user="user" />
+                </div>
+            </section>
+            <section class="logs-section">
+                <h2>Логи запросов</h2>
+                <button @click="clearLogs">Очистить логи</button>
+                <div class="logs-container">
+                    <div v-for="(log, index) in logs" :key="index" :class="['log-entry', log.type]">{{ log.message }}</div>
+                </div>
+            </section>
+        </div>
+
+        <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+            <div class="modal-content" @click.stop>
+                <h3>Редактировать статью</h3>
+                <input type="text" v-model="editForm.title" placeholder="Заголовок статьи">
+                <textarea v-model="editForm.content" placeholder="Содержимое статьи"></textarea>
+                <div class="modal-actions">
+                    <button @click="updateArticle" :disabled="isLoading">Сохранить</button>
+                    <button @click="closeEditModal">Отмена</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

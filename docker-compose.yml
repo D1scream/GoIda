@@ -53,6 +53,14 @@ services:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     command: ["./main"]
 
+  frontend:
+    build: ./goida-frontend
+    container_name: goida-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+
 volumes:
   pgdata:
 

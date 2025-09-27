@@ -99,9 +99,10 @@ func (r *articleRepository) DeleteArticle(id int) error {
 
 func (r *articleRepository) ListArticles(limit, offset int) ([]*models.Article, error) {
 	query := `
-		SELECT id, title, content, author_id, created_at, updated_at
-		FROM articles 
-		ORDER BY created_at DESC
+		SELECT a.id, a.title, a.content, a.author_id, a.created_at, a.updated_at, u.name as author_name
+		FROM articles a
+		LEFT JOIN users u ON a.author_id = u.id
+		ORDER BY a.created_at DESC
 		LIMIT $1 OFFSET $2`
 
 	rows, err := r.db.Query(query, limit, offset)
@@ -113,11 +114,15 @@ func (r *articleRepository) ListArticles(limit, offset int) ([]*models.Article, 
 	var articles []*models.Article
 	for rows.Next() {
 		article := &models.Article{}
+		var authorName sql.NullString
 		err := rows.Scan(
 			&article.ID, &article.Title, &article.Content,
-			&article.AuthorID, &article.CreatedAt, &article.UpdatedAt)
+			&article.AuthorID, &article.CreatedAt, &article.UpdatedAt, &authorName)
 		if err != nil {
 			return nil, err
+		}
+		if authorName.Valid {
+			article.AuthorName = authorName.String
 		}
 		articles = append(articles, article)
 	}

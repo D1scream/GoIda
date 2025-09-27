@@ -1,207 +1,290 @@
-# GoIda API
+# GoIda - Система управления статьями
 
-REST API для управления пользователями и статьями с системой авторизации и ролями.
+Веб-приложение для управления статьями с авторизацией пользователей, построенное на Go (бэкенд) и Vue.js (фронтенд).
+
+## Описание проекта
+
+GoIda - это система управления статьями, которая позволяет пользователям создавать, редактировать и удалять статьи. Система включает в себя авторизацию пользователей, управление ролями и административные функции.
 
 ## Возможности
 
-- **Две связанные сущности**: Пользователи и Статьи (связь один-ко-многим)
-- **Система авторизации**: JWT токены с Bearer аутентификацией
-- **Роли пользователей**: `user` (обычный пользователь) и `admin` (администратор)
-- **Валидация данных**: Проверка входных данных на уровне API
-- **Права доступа**: Пользователи могут редактировать только свои объекты, админы - любые
+- **Авторизация и регистрация** - вход в систему с логином и паролем, регистрация новых пользователей
+- **Управление статьями** - создание, просмотр, редактирование и удаление статей
+- **Управление пользователями** - просмотр списка пользователей (только для админов)
+- **Логи запросов** - отслеживание всех API запросов в реальном времени
 
-## Структура базы данных
+## Быстрый старт
 
-База данных содержит 4 основные таблицы:
-- `roles` - справочник ролей пользователей
-- `users` - профили пользователей
-- `auth_credentials` - данные для аутентификации (логины и пароли)
-- `articles` - статьи пользователей
+### Предварительные требования
 
-Подробное описание полей таблиц доступно в комментариях к миграциям базы данных.
+- Docker и Docker Compose
 
-## API Endpoints
+### Запуск
 
-#### Регистрация пользователя
-```
-POST /api/users
-Content-Type: application/json
+1. **Клонируйте репозиторий:**
+   ```bash
+   git clone <repository-url>
+   cd GoIda
+   ```
 
-{
-  "email": "user@example.com",
-  "name": "Test User"
-}
-```
+2. **Запустите все сервисы:**
+   ```bash
+   docker-compose up -d
+   ```
 
-#### Авторизация
-```
-POST /api/auth/login
-Content-Type: application/json
+3. **Откройте браузер:**
+   - Фронтенд: http://localhost:3000
+   - API: http://localhost:8080
 
-{
-  "login": "user",
-  "password": "password"
-}
-```
-
-Ответ:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "name": "Test User",
-    "role_id": 1,
-    "role": {
-      "id": 1,
-      "name": "user",
-      "description": "Обычный пользователь"
-    },
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-#### Получение списка статей
-```
-GET /api/articles?limit=10&offset=0
-```
-
-#### Получение конкретной статьи
-```
-GET /api/articles/{id}
-```
-
-#### Получение статей пользователя
-```
-GET /api/users/{authorId}/articles?limit=10&offset=0
-```
-
-#### Получение списка ролей (только для админов)
-```
-GET /api/admin/roles
-Authorization: Bearer ADMIN_TOKEN
-```
-
-#### Получение конкретной роли (только для админов)
-```
-GET /api/admin/roles/{id}
-Authorization: Bearer ADMIN_TOKEN
-```
-
-### Защищенные маршруты (требуют авторизации)
-
-#### Получение профиля
-```
-GET /api/auth/profile
-Authorization: Bearer YOUR_TOKEN
-```
-
-#### Создание статьи
-```
-POST /api/articles
-Authorization: Bearer YOUR_TOKEN
-Content-Type: application/json
-
-{
-  "title": "Заголовок статьи",
-  "content": "Содержимое статьи"
-}
-```
-
-#### Обновление статьи (только свои)
-```
-PUT /api/articles/{id}
-Authorization: Bearer YOUR_TOKEN
-Content-Type: application/json
-
-{
-  "title": "Новый заголовок",
-  "content": "Новое содержимое"
-}
-```
-
-#### Удаление статьи
-```
-DELETE /api/articles/{id}
-Authorization: Bearer YOUR_TOKEN
-```
-
-#### Получение информации о пользователе
-```
-GET /api/users/{id}
-Authorization: Bearer YOUR_TOKEN
-```
-
-
-### Админские маршруты (требуют роль admin)
-
-#### Получение списка пользователей
-```
-GET /api/admin/users?limit=10&offset=0
-Authorization: Bearer ADMIN_TOKEN
-```
-
-## Коды ответов
-
-- `200` - Успешный ответ
-- `201` - Успешный ответ (при добавлении объекта)
-- `204` - Успешный ответ без содержимого (при удалении)
-- `400` - Некорректный формат запроса/неверный запрос
-- `401` - Требуется аутентификация (не авторизован)
-- `403` - Нет доступа (авторизован, но не имеет таких прав)
-- `404` - Не найден
-- `422` - Неверные данные (например, не хватает данных для создания объекта)
-- `500` - Внутренняя ошибка сервера
-
-## Права доступа
-
-### Обычные пользователи (role: user)
-- Могут создавать, редактировать и удалять только свои статьи
-- Могут просматривать информацию о других пользователях
-
-### Администраторы (role: admin)
-- Могут создавать, редактировать и удалять любые статьи
-- Могут видеть список всех пользователей
-
-## Запуск
-
-1. Скопируйте конфигурацию:
-```bash
-cp env.example .env
-```
-
-Переменные окружения:
-
-- `DB_HOST` - хост базы данных PostgreSQL (по умолчанию: `localhost`)
-- `DB_PORT` - порт базы данных PostgreSQL (по умолчанию: `5433`)
-- `DB_USER` - пользователь базы данных (по умолчанию: `postgres`)
-- `DB_PASSWORD` - пароль базы данных (по умолчанию: `postgres`)
-- `DB_NAME` - имя базы данных (по умолчанию: `goida`)
-- `SERVER_PORT` - порт веб-сервера (по умолчанию: `8080`)
-- `SERVER_HOST` - хост веб-сервера (по умолчанию: `0.0.0.0`)
-- `LOG_LEVEL` - уровень логирования (по умолчанию: `info`)
-- `JWT_SECRET` - секретный ключ для JWT токенов (по умолчанию: `your-super-secret-jwt-key-change-this-in-production`)
-
-
-3. Установка зависимости:
-```bash
-go mod tidy
-```
-
-
-3. Запуск
-```bash
-docker-compose up -d
-```
-
-## Тестирование
-
-Используйте файл `api-tests.http` для тестирования API с помощью HTTP-клиента (например, VS Code REST Client).
-
-### Тестовые данные
+## Тестовые аккаунты
 
 - **Админ**: логин `admin`, пароль `password`
 - **Пользователь**: логин `user`, пароль `password`
+
+## Функции
+
+### Авторизация
+- **Вход**: Введите логин и пароль, нажмите "Войти"
+- **Регистрация**: Переключитесь на вкладку "Регистрация", заполните форму
+- **Выход**: Нажмите "Выйти" для завершения сессии
+
+### Статьи
+- **Создание**: Заполните заголовок и содержимое, нажмите "Создать статью"
+- **Просмотр**: Нажмите "Обновить список" для загрузки статей
+- **Редактирование**: Доступно только для своих статей (или для админов)
+- **Удаление**: Доступно только для своих статей (или для админов)
+
+### Пользователи (только для админов)
+- Нажмите "Загрузить пользователей" для просмотра списка
+
+### Логи
+- Все API запросы отображаются в разделе "Логи запросов"
+
+## API Endpoints
+
+### Публичные запросы
+
+#### Авторизация
+
+**POST** `/api/auth/login` - авторизация пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: `{"login":"admin","password":"password"}` | **Success:** *Пользователь найден*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"token":"jwt_token","user":{"id":1,"email":"admin@example.com","name":"Admin","role":{"name":"admin"}}}`<br/>**Denied:** *Неверные данные*<br/>Status: 401 |
+
+#### Регистрация пользователя
+
+**POST** `/api/users` - регистрация нового пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: `{"name":"Имя","email":"email@example.com","login":"username","password":"password"}` | **Success:** *Пользователь создан*<br/>Status: 201/Created<br/>Content-type: application/json<br/>Body: `{"message":"User created successfully","user":{"id":1,"email":"email@example.com","name":"Имя","role":{"name":"user"}},"login":"username"}`<br/>**Denied:** *Логин уже занят*<br/>Status: 409<br/>**Validation Error:** *Неверные данные*<br/>Status: 422 |
+
+#### Список статей
+
+**GET** `/api/articles` - получение списка статей
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Query parameters: `?limit=10&offset=0` | **Success:** *Статьи найдены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `[{"id":1,"title":"Заголовок","content":"Содержимое","author_id":1,"author_name":"Автор","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}]` |
+
+#### Информация о статье
+
+**GET** `/api/articles/{id}` - получение информации о статье
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: id статьи в URL | **Success:** *Статья найдена*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"title":"Заголовок","content":"Содержимое","author_id":1,"author_name":"Автор","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}`<br/>**Denied:** *Статья не найдена*<br/>Status: 404 |
+
+#### Статьи пользователя
+
+**GET** `/api/users/{authorId}/articles` - получение статей конкретного пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: authorId в URL<br/>Query parameters: `?limit=10&offset=0` | **Success:** *Статьи найдены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `[{"id":1,"title":"Заголовок","content":"Содержимое","author_id":1,"author_name":"Автор","created_at":"2024-01-01T00:00:00Z"}]` |
+
+### Авторизованные запросы
+
+Для выполнения авторизованных запросов необходимо передать Bearer токен в заголовке Authorization.
+
+#### Профиль пользователя
+
+**GET** `/api/auth/profile` - получение профиля текущего пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен> | **Success:** *Профиль получен*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"email":"email@example.com","name":"Имя","role":{"name":"user"}}`<br/>**Denied:** *Неверный токен*<br/>Status: 401 |
+
+#### Создание статьи
+
+**POST** `/api/articles` - создание новой статьи
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Parameters: `{"title":"Заголовок","content":"Содержимое статьи"}` | **Success:** *Статья создана*<br/>Status: 201/Created<br/>Content-type: application/json<br/>Body: `{"id":1,"title":"Заголовок","content":"Содержимое","author_id":1,"author_name":"Автор","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}`<br/>**Validation Error:** *Неверные данные*<br/>Status: 422 |
+
+#### Редактирование статьи
+
+**PUT** `/api/articles/{id}` - редактирование статьи
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Parameters: `{"title":"Новый заголовок","content":"Новое содержимое"}` | **Success:** *Статья обновлена*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"title":"Новый заголовок","content":"Новое содержимое","author_id":1,"author_name":"Автор","updated_at":"2024-01-01T00:00:00Z"}`<br/>**Denied:** *Нет прав*<br/>Status: 403<br/>**Not Found:** *Статья не найдена*<br/>Status: 404 |
+
+#### Удаление статьи
+
+**DELETE** `/api/articles/{id}` - удаление статьи
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Parameters: id статьи в URL | **Success:** *Статья удалена*<br/>Status: 204/No Content<br/>**Denied:** *Нет прав*<br/>Status: 403<br/>**Not Found:** *Статья не найдена*<br/>Status: 404 |
+
+#### Получение пользователя
+
+**GET** `/api/users/{id}` - получение информации о пользователе
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Parameters: id пользователя в URL | **Success:** *Пользователь найден*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"email":"email@example.com","name":"Имя","role":{"name":"user"}}`<br/>**Not Found:** *Пользователь не найден*<br/>Status: 404 |
+
+### Административные запросы
+
+Административные запросы доступны только пользователям с ролью "admin".
+
+#### Список всех пользователей
+
+**GET** `/api/admin/users` - получение списка всех пользователей
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Query parameters: `?limit=10&offset=0` | **Success:** *Пользователи найдены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `[{"id":1,"email":"email@example.com","name":"Имя","role_id":1,"role":{"id":1,"name":"user","description":"Обычный пользователь"},"created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}]`<br/>**Denied:** *Нет прав*<br/>Status: 403 |
+
+#### Список ролей
+
+**GET** `/api/admin/roles` - получение списка ролей
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен> | **Success:** *Роли найдены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `[{"id":1,"name":"user","description":"Обычный пользователь","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"},{"id":2,"name":"admin","description":"Администратор","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}]` |
+
+#### Информация о роли
+
+**GET** `/api/admin/roles/{id}` - получение информации о роли
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Authorization: Bearer <токен><br/>Parameters: id роли в URL | **Success:** *Роль найдена*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"name":"user","description":"Обычный пользователь","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}`<br/>**Not Found:** *Роль не найдена*<br/>Status: 404 |
+
+### Дополнительные эндпоинты
+
+#### Управление учетными данными
+
+**POST** `/api/auth/credentials` - создание учетных данных для пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: `{"user_id":1,"login":"username","password":"password"}` | **Success:** *Учетные данные созданы*<br/>Status: 201/Created<br/>Content-type: application/json<br/>Body: `{"id":1,"user_id":1,"login":"username","created_at":"2024-01-01T00:00:00Z"}` |
+
+**GET** `/api/auth/credentials/{userId}` - получение учетных данных пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: userId в URL | **Success:** *Учетные данные найдены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"user_id":1,"login":"username","created_at":"2024-01-01T00:00:00Z"}` |
+
+**PUT** `/api/auth/credentials/{userId}` - обновление учетных данных пользователя
+
+| Request | Response |
+| :---- | :---- |
+| Content-type: application/json<br/>Parameters: `{"login":"new_username","password":"new_password"}` | **Success:** *Учетные данные обновлены*<br/>Status: 200/OK<br/>Content-type: application/json<br/>Body: `{"id":1,"user_id":1,"login":"new_username","updated_at":"2024-01-01T00:00:00Z"}` |
+
+## Роли пользователей
+
+- **user** - обычный пользователь (может создавать и редактировать только свои статьи)
+- **admin** - администратор (может управлять всеми статьями и пользователями)
+
+## Валидация данных
+
+### Статьи
+- **title** - обязательное поле, минимум 3 символа
+- **content** - обязательное поле, минимум 10 символов
+
+### Пользователи
+- **name** - обязательное поле, минимум 2 символа
+- **email** - обязательное поле, валидный email
+- **login** - обязательное поле, минимум 3 символа
+- **password** - обязательное поле, минимум 6 символов
+
+### Учетные данные
+- **login** - обязательное поле, минимум 3 символа
+- **password** - обязательное поле
+
+## Коды ошибок
+
+- **200** - OK (успешный запрос)
+- **201** - Created (ресурс создан)
+- **204** - No Content (ресурс удален)
+- **400** - Bad Request (неверный запрос)
+- **401** - Unauthorized (не авторизован)
+- **403** - Forbidden (нет прав доступа)
+- **404** - Not Found (ресурс не найден)
+- **409** - Conflict (конфликт, например, логин уже занят)
+- **422** - Unprocessable Entity (ошибка валидации)
+- **500** - Internal Server Error (внутренняя ошибка сервера)
+
+## Устранение неполадок
+
+### CORS ошибки
+Убедитесь, что бэкенд запущен и CORS настроен правильно.
+
+### API недоступен
+Проверьте статус контейнеров:
+```bash
+docker ps
+```
+
+### База данных
+Проверьте логи миграций:
+```bash
+docker logs goida-liquibase
+```
+
+### Порт занят
+Если порт 3000 или 8080 занят, измените порты в `docker-compose.yml`.
+
+## Разработка
+
+### Локальная разработка
+
+1. **Бэкенд:**
+   ```bash
+   go run main.go
+   ```
+
+2. **Фронтенд:**
+   ```bash
+   cd goida-frontend
+   python -m http.server 3000
+   ```
+
+### Пересборка контейнеров
+
+```bash
+# Пересборка всех сервисов
+docker-compose build --no-cache
+
+# Пересборка конкретного сервиса
+docker-compose build --no-cache app
+docker-compose build --no-cache frontend
+```
+
+### Логи
+
+```bash
+# Все сервисы
+docker-compose logs
+
+# Конкретный сервис
+docker-compose logs app
+docker-compose logs frontend
+```

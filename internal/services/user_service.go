@@ -3,12 +3,15 @@ package services
 import (
 	"fmt"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"goida/internal/models"
 	"goida/internal/repository"
 )
 
 type UserService interface {
 	CreateUser(req *models.CreateUserRequest) (*models.User, error)
+	CreateUserWithCredentials(req *models.CreateUserRequest) (*models.User, error)
 	GetUser(id int) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
 	ListUsers(limit, offset int) ([]*models.User, error)
@@ -50,6 +53,66 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 	}
 
 	return user, nil
+}
+
+func (s *userService) CreateUserWithCredentials(req *models.CreateUserRequest) (*models.User, error) {
+	// Проверяем, что пользователь с таким email не существует
+	existingUser, err := s.userRepo.GetByEmail(req.Email)
+	if err == nil && existingUser != nil {
+		return nil, fmt.Errorf("user with email %s already exists", req.Email)
+	}
+
+	// Проверяем, что логин не занят
+	existingCredentials, err := s.authCredentialsRepo.GetByLogin(req.Login)
+	if err == nil && existingCredentials != nil {
+		return nil, fmt.Errorf("login %s is already taken", req.Login)
+	}
+
+	// Получаем роль пользователя по умолчанию
+	userRole, err := s.roleRepo.GetByName(models.RoleUser)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default role: %w", err)
+	}
+
+	// Создаем пользователя
+	user := &models.User{
+		Email:  req.Email,
+		Name:   req.Name,
+		RoleID: userRole.ID,
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Хешируем пароль
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		// Если не удалось создать учетные данные, удаляем пользователя
+		s.userRepo.Delete(user.ID)
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Создаем учетные данные
+	credentials := &models.AuthCredentials{
+		UserID:   user.ID,
+		Login:    req.Login,
+		Password: string(hashedPassword),
+	}
+
+	if err := s.authCredentialsRepo.Create(credentials); err != nil {
+		// Если не удалось создать учетные данные, удаляем пользователя
+		s.userRepo.Delete(user.ID)
+		return nil, fmt.Errorf("failed to create auth credentials: %w", err)
+	}
+
+	// Загружаем пользователя с ролью
+	userWithRole, err := s.userRepo.GetByID(user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user with role: %w", err)
+	}
+
+	return userWithRole, nil
 }
 
 func (s *userService) GetUser(id int) (*models.User, error) {

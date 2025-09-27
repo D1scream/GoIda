@@ -8,11 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"goida/internal/config"
+	"goida/internal/database"
 	"goida/internal/handlers"
 	"goida/internal/middleware"
 	"goida/internal/repository"
 	"goida/internal/services"
-	"goida/internal/database"
 )
 
 type App struct {
@@ -33,7 +33,7 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Инициализируем приложение
 	app := &App{
 		config: cfg,
@@ -65,8 +65,9 @@ func (a *App) setup() error {
 	authHandler := handlers.NewAuthHandler(authService, validator)
 	articleHandler := handlers.NewArticleHandler(articleService, validator)
 	roleHandler := handlers.NewRoleHandler(roleRepo)
+	authCredentialsHandler := handlers.NewAuthCredentialsHandler(authCredentialsRepo, validator)
 
-	a.setupRoutes(userHandler, authHandler, articleHandler, roleHandler, authMiddleware)
+	a.setupRoutes(userHandler, authHandler, articleHandler, roleHandler, authCredentialsHandler, authMiddleware)
 
 	return nil
 }
