@@ -1,5 +1,5 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; min-height: 100vh; color: #333; }
 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
 header { text-align: center; margin-bottom: 30px; background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
@@ -26,7 +26,6 @@ section h3 { color: #2d3748; margin-bottom: 15px; font-size: 1.2rem; }
     font-weight: 600;
     color: #718096;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
 .tab-button:hover {
@@ -83,7 +82,6 @@ input, textarea, button {
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 14px;
-    transition: all 0.3s ease;
 }
 
 input:focus, textarea:focus {
@@ -105,27 +103,20 @@ textarea {
 }
 
 button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #667eea;
     color: white;
     border: none;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.3s ease;
 }
 
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-button:active {
-    transform: translateY(0);
+    background: #5a67d8;
 }
 
 button:disabled {
     background: #a0aec0;
     cursor: not-allowed;
-    transform: none;
 }
 
 .status {
@@ -159,13 +150,8 @@ button:disabled {
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 15px;
-    transition: all 0.3s ease;
 }
 
-.article-card:hover, .user-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
 
 .article-card h4, .user-card h4 {
     color: #2d3748;
@@ -192,15 +178,15 @@ button:disabled {
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+    background: #f56565;
 }
 
 .btn-warning {
-    background: linear-gradient(135deg, #f6e05e 0%, #ed8936 100%);
+    background: #ed8936;
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    background: #718096;
 }
 
 .btn-link {
@@ -214,8 +200,6 @@ button:disabled {
 
 .btn-link:hover {
     background: none;
-    transform: none;
-    box-shadow: none;
     color: #4c51bf;
 }
 
@@ -288,21 +272,6 @@ button:disabled {
     }
 }
 
-/* Анимации */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.article-card, .user-card {
-    animation: fadeIn 0.5s ease-out;
-}
 
 /* Скрытие секций */
 .hidden {

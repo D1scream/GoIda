@@ -13,12 +13,16 @@
         <sqlFile path="users/001-create-users-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
+    <changeSet id="003" author="sga" runOnChange="true">
+        <sqlFile path="users/002-add-user-constraints.sql" relativeToChangelogFile="true" splitStatements="false"/>
+    </changeSet>
+
     <changeSet id="006" author="sga" runOnChange="true">
-        <sqlFile path="users/006-create-articles-table.sql" relativeToChangelogFile="true"/>
+        <sqlFile path="articles/001-create-articles-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
     <changeSet id="007" author="sga" runOnChange="true">
-        <sqlFile path="users/008-create-auth-credentials-table.sql" relativeToChangelogFile="true"/>
+        <sqlFile path="auth/001-create-auth-credentials-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
     <!-- Seeds -->
