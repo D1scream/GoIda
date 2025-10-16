@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -18,7 +18,7 @@ services:
       db:
         condition: service_started
     volumes:
-      - ./migrations:/liquibase/changelog/migrations
+      - ./migrations:/liquibase/changelog
       - ./lib:/liquibase/changelog/lib
     working_dir: /liquibase/changelog
     command: >
@@ -29,7 +29,7 @@ services:
       --url=jdbc:postgresql://db:5432/${DB_NAME:-goida}
       --username=${DB_USER:-postgres}
       --password=${DB_PASSWORD:-postgres}
-      --changeLogFile=migrations/changelog-master.xml
+      --changeLogFile=changelog-master.xml
       update
 
   app:

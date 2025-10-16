@@ -11,7 +11,6 @@ import (
 type Config struct {
 	Database  DatabaseConfig
 	Server    ServerConfig
-	Logging   LoggingConfig
 	JWTSecret string
 }
 
@@ -26,10 +25,6 @@ type DatabaseConfig struct {
 type ServerConfig struct {
 	Host string
 	Port string
-}
-
-type LoggingConfig struct {
-	Level string
 }
 
 func Load() (*Config, error) {
@@ -50,9 +45,6 @@ func Load() (*Config, error) {
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "localhost"),
 			Port: getEnv("SERVER_PORT", "8080"),
-		},
-		Logging: LoggingConfig{
-			Level: getEnv("LOG_LEVEL", "info"),
 		},
 		JWTSecret: getEnv("JWT_SECRET", "your-secret-key"),
 	}, nil

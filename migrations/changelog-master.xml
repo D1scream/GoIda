@@ -13,15 +13,6 @@
         <sqlFile path="users/001-create-users-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
-    <changeSet id="003" author="sga" runOnChange="true">
-        <sqlFile path="users/002-add-user-indexes.sql" relativeToChangelogFile="true"/>
-    </changeSet>
-
-    <changeSet id="004" author="sga" runOnChange="true">
-        <sqlFile path="users/003-add-user-constraints.sql" relativeToChangelogFile="true"/>
-    </changeSet>
-
-
     <changeSet id="006" author="sga" runOnChange="true">
         <sqlFile path="users/006-create-articles-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
@@ -30,7 +21,7 @@
         <sqlFile path="users/008-create-auth-credentials-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
-    <!-- Seeds (тестовые данные) -->
+    <!-- Seeds -->
     <changeSet id="008" author="sga" runOnChange="true">
         <sqlFile path="seeds/001-insert-roles.sql" relativeToChangelogFile="true"/>
     </changeSet>
