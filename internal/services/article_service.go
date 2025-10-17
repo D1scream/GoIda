@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -21,17 +22,18 @@ type ArticleService interface {
 type articleService struct {
 	articleRepo repository.ArticleRepository
 	userRepo    repository.UserRepository
+	commentRepo repository.CommentRepository
 }
 
-func NewArticleService(articleRepo repository.ArticleRepository, userRepo repository.UserRepository) ArticleService {
+func NewArticleService(articleRepo repository.ArticleRepository, userRepo repository.UserRepository, commentRepo repository.CommentRepository) ArticleService {
 	return &articleService{
 		articleRepo: articleRepo,
 		userRepo:    userRepo,
+		commentRepo: commentRepo,
 	}
 }
 
 func (s *articleService) CreateArticle(req *models.CreateArticleRequest, authorID int) (*models.Article, error) {
-	// Проверяем существование автора
 	_, err := s.userRepo.GetByID(authorID)
 	if err != nil {
 		return nil, errors.New("author not found")
@@ -56,7 +58,12 @@ func (s *articleService) GetArticle(id int) (*models.Article, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if s.commentRepo != nil {
+		if avg, cnt, err := s.commentRepo.GetArticleRatingStats(context.Background(), id); err == nil {
+			article.RatingAvg = avg
+			article.RatingCount = cnt
+		}
+	}
 	return article, nil
 }
 
@@ -66,12 +73,10 @@ func (s *articleService) UpdateArticle(id int, req *models.UpdateArticleRequest,
 		return nil, err
 	}
 
-	// Проверяем права доступа
 	if userRole != models.RoleAdmin && article.AuthorID != userID {
 		return nil, errors.New("access denied")
 	}
 
-	// Обновляем только переданные поля
 	if req.Title != "" {
 		article.Title = req.Title
 	}
@@ -84,7 +89,6 @@ func (s *articleService) UpdateArticle(id int, req *models.UpdateArticleRequest,
 		return nil, err
 	}
 
-	// Возвращаем обновленную статью
 	return s.articleRepo.GetArticle(id)
 }
 
@@ -94,7 +98,6 @@ func (s *articleService) DeleteArticle(id int, userID int, userRole string) erro
 		return err
 	}
 
-	// Проверяем права доступа
 	if userRole != models.RoleAdmin && article.AuthorID != userID {
 		return errors.New("access denied")
 	}
@@ -103,7 +106,20 @@ func (s *articleService) DeleteArticle(id int, userID int, userRole string) erro
 }
 
 func (s *articleService) ListArticles(limit, offset int) ([]*models.Article, error) {
-	return s.articleRepo.ListArticles(limit, offset)
+	articles, err := s.articleRepo.ListArticles(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	if s.commentRepo == nil {
+		return articles, nil
+	}
+	for _, a := range articles {
+		if avg, cnt, err := s.commentRepo.GetArticleRatingStats(context.Background(), a.ID); err == nil {
+			a.RatingAvg = avg
+			a.RatingCount = cnt
+		}
+	}
+	return articles, nil
 }
 
 func (s *articleService) GetArticlesByAuthor(authorID int, limit, offset int) ([]*models.Article, error) {
@@ -116,11 +132,9 @@ func (s *articleService) CanUserModifyArticle(articleID, userID int, userRole st
 		return false, err
 	}
 
-	// Админы могут изменять любые статьи
 	if userRole == models.RoleAdmin {
 		return true, nil
 	}
 
-	// Обычные пользователи могут изменять только свои статьи
 	return article.AuthorID == userID, nil
 }

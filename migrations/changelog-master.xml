@@ -21,6 +21,10 @@
         <sqlFile path="articles/001-create-articles-table.sql" relativeToChangelogFile="true"/>
     </changeSet>
 
+    <changeSet id="012" author="sga" runOnChange="true">
+        <sqlFile path="articles/002-create-comments-table.sql" relativeToChangelogFile="true"/>
+    </changeSet>
+
     <changeSet id="007" author="sga" runOnChange="true">
         <sqlFile path="auth/001-create-auth-credentials-table.sql" relativeToChangelogFile="true"/>
     </changeSet>

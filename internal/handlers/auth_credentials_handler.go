@@ -91,7 +91,6 @@ func (h *AuthCredentialsHandler) GetCredentials(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// Не возвращаем пароль
 	response := map[string]interface{}{
 		"user_id":    credentials.UserID,
 		"login":      credentials.Login,
@@ -137,7 +136,6 @@ func (h *AuthCredentialsHandler) UpdateCredentials(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Обновляем только переданные поля
 	if req.Login != "" {
 		credentials.Login = req.Login
 	}

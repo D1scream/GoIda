@@ -62,13 +62,7 @@
                     <user-card v-for="user in users" :key="user.id" :user="user" />
                 </div>
             </section>
-            <section class="logs-section">
-                <h2>Логи запросов</h2>
-                <button @click="clearLogs">Очистить логи</button>
-                <div class="logs-container">
-                    <div v-for="(log, index) in logs" :key="index" :class="['log-entry', log.type]">{{ log.message }}</div>
-                </div>
-            </section>
+            
         </div>
 
         <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">

@@ -19,28 +19,114 @@ const api = {
 };
 
 const ArticleCard = {
-    props: ['article', 'currentUser'],
-    emits: ['delete', 'edit'],
-    template: `<div class="article-card">
-        <h4>{{ article.title }}</h4>
-        <p><strong>Автор:</strong> {{ article.author_name }}</p>
-        <p><strong>Создана:</strong> {{ formatDate(article.created_at) }}</p>
-        <p><strong>Содержимое:</strong> {{ truncateText(article.content, 200) }}</p>
-        <div class="article-actions">
-            <button v-if="canEdit" class="btn-small btn-warning" @click="$emit('edit', article)">Редактировать</button>
-            <button v-if="canEdit" class="btn-small btn-danger" @click="confirmDelete">Удалить</button>
-        </div>
-    </div>`,
-    computed: {
-        canEdit() {
-            return this.currentUser && (this.currentUser.role.name === 'admin' || this.currentUser.id === this.article.author_id);
-        }
-    },
-    methods: {
-        formatDate(dateString) { return new Date(dateString).toLocaleString('ru-RU'); },
-        truncateText(text, maxLength) { return text.length > maxLength ? text.substring(0, maxLength) + '...' : text; },
-        confirmDelete() { if (confirm('Вы уверены, что хотите удалить эту статью?')) this.$emit('delete', this.article.id); }
-    }
+	props: ['article', 'currentUser'],
+	emits: ['delete', 'edit'],
+	template: `<div class="article-card">
+		<h4>{{ article.title }}</h4>
+		<p><strong>Автор:</strong> {{ article.author_name }}</p>
+		<p><strong>Создана:</strong> {{ formatDate(article.created_at) }}</p>
+		<p><strong>Содержимое:</strong> {{ truncateText(article.content, 200) }}</p>
+		<p v-if="hasRating"><strong>Рейтинг:</strong> {{ article.rating_avg.toFixed(1) }} ({{ article.rating_count }})</p>
+		<div class="article-actions">
+			<button v-if="canEdit" class="btn-small btn-warning" @click="$emit('edit', article)">Редактировать</button>
+			<button v-if="canEdit" class="btn-small btn-danger" @click="confirmDelete">Удалить</button>
+			<button class="btn-small btn-secondary" @click="toggleComments">{{ showComments ? 'Скрыть' : 'Комментарии' }}</button>
+		</div>
+		<div v-if="showComments" class="comments">
+			<div class="comment-form" v-if="currentUser">
+				<textarea v-model="newCommentText" placeholder="Оставьте комментарий..."></textarea>
+				<label>Оценка:
+					<select v-model.number="newCommentRating">
+						<option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+					</select>
+				</label>
+				<button @click="createComment" :disabled="creatingComment || !canSend">Отправить</button>
+			</div>
+			<div v-if="loadingComments">Загрузка комментариев...</div>
+			<div v-else-if="comments.length === 0" class="no-data">Нет комментариев</div>
+			<div v-else>
+				<div v-for="c in comments" :key="c.id" class="comment">
+					<div class="comment-meta"><strong>Пользователь #{{ c.user_id }}</strong> · {{ formatDate(c.created_at) }} · ★ {{ c.rating }}</div>
+					<div class="comment-text">{{ c.text }}</div>
+					<div class="comment-actions">
+						<button v-if="currentUser && currentUser.id === c.user_id" class="btn-small btn-danger" @click="deleteComment(c.id)" :disabled="deletingIds.has(c.id)">
+							Удалить
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>`,
+	data() {
+		return {
+			showComments: false,
+			comments: [],
+			loadingComments: false,
+			creatingComment: false,
+			newCommentText: '',
+			newCommentRating: 5,
+			deletingIds: new Set()
+		};
+	},
+	computed: {
+		canEdit() {
+			return this.currentUser && (this.currentUser.role.name === 'admin' || this.currentUser.id === this.article.author_id);
+		},
+		hasRating() {
+			return typeof this.article.rating_count === 'number' && this.article.rating_count > 0;
+		},
+		canSend() {
+			return this.newCommentText.trim().length > 0 && this.newCommentRating >= 1 && this.newCommentRating <= 5;
+		}
+	},
+	methods: {
+		formatDate(dateString) { return new Date(dateString).toLocaleString('ru-RU'); },
+		truncateText(text, maxLength) { return text.length > maxLength ? text.substring(0, maxLength) + '...' : text; },
+		confirmDelete() { if (confirm('Вы уверены, что хотите удалить эту статью?')) this.$emit('delete', this.article.id); },
+		async toggleComments() {
+			this.showComments = !this.showComments;
+			if (this.showComments && this.comments.length === 0) {
+				await this.loadComments();
+			}
+		},
+		async loadComments() {
+			this.loadingComments = true;
+			try {
+				this.comments = await api.get(`/articles/${this.article.id}/comments?limit=50`);
+			} catch (e) {
+				alert(`Ошибка загрузки комментариев: ${e.message}`);
+			} finally {
+				this.loadingComments = false;
+			}
+		},
+		async createComment() {
+			if (!this.currentUser) { alert('Необходимо авторизоваться'); return; }
+			if (!this.canSend) { return; }
+			this.creatingComment = true;
+			try {
+				await api.post(`/articles/${this.article.id}/comments`, { text: this.newCommentText.trim(), rating: this.newCommentRating });
+				this.newCommentText = '';
+				this.newCommentRating = 5;
+				await this.loadComments();
+			} catch (e) {
+				alert(`Ошибка создания комментария: ${e.message}`);
+			} finally {
+				this.creatingComment = false;
+			}
+		},
+		async deleteComment(id) {
+			if (!confirm('Удалить комментарий?')) return;
+			this.deletingIds.add(id);
+			try {
+				await api.delete(`/comments/${id}`);
+				this.comments = this.comments.filter(c => c.id !== id);
+			} catch (e) {
+				alert(`Ошибка удаления комментария: ${e.message}`);
+			} finally {
+				this.deletingIds.delete(id);
+			}
+		}
+	}
 };
 
 const UserCard = {

@@ -22,19 +22,16 @@ type App struct {
 }
 
 func New() (*App, error) {
-	// Загружаем конфигурацию
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	// Подключаемся к базе данных
 	db, err := database.New(cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Инициализируем приложение
 	app := &App{
 		config: cfg,
 		db:     db,
@@ -53,10 +50,12 @@ func (a *App) setup() error {
 	articleRepo := repository.NewArticleRepository(a.db.DB)
 	roleRepo := repository.NewRoleRepository(a.db.DB)
 	authCredentialsRepo := repository.NewAuthCredentialsRepository(a.db.DB)
+	commentRepo := repository.NewCommentRepository(a.db.DB)
 
 	userService := services.NewUserService(userRepo, roleRepo, authCredentialsRepo)
 	authService := services.NewAuthService(userRepo, authCredentialsRepo, a.config.JWTSecret)
-	articleService := services.NewArticleService(articleRepo, userRepo)
+	articleService := services.NewArticleService(articleRepo, userRepo, commentRepo)
+	commentService := services.NewCommentService(commentRepo, articleRepo)
 
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	validator := middleware.NewValidator()
@@ -64,18 +63,19 @@ func (a *App) setup() error {
 	userHandler := handlers.NewUserHandler(userService, validator)
 	authHandler := handlers.NewAuthHandler(authService, validator)
 	articleHandler := handlers.NewArticleHandler(articleService, validator)
+	commentHandler := handlers.NewCommentHandler(commentService, validator)
 	roleHandler := handlers.NewRoleHandler(roleRepo)
 	authCredentialsHandler := handlers.NewAuthCredentialsHandler(authCredentialsRepo, validator)
 
-	a.setupRoutes(userHandler, authHandler, articleHandler, roleHandler, authCredentialsHandler, authMiddleware)
+	a.setupRoutes(userHandler, authHandler, articleHandler, roleHandler, authCredentialsHandler, commentHandler, authMiddleware)
 
 	return nil
 }
 
 func (a *App) Run() error {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	port := a.config.Server.Port
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		port = envPort
 	}
 
 	logrus.Infof("Server starting on port %s", port)
