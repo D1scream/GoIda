@@ -23,7 +23,7 @@ GoIda - это система управления статьями, котор�
 
 1. **Запустите все сервисы:**
    ```bash
-   docker-compose up -d
+   docker compose build; docker compose up
    ```
 
 2. **Откройте браузер:**

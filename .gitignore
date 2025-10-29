@@ -1,7 +1,6 @@
 # Build artifacts
 server
 server_unix
-go.sum
 
 # Environment variables
 .env
