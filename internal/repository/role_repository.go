@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"goida/internal/models"
@@ -32,8 +33,8 @@ func (r *roleRepository) GetByID(id int) (*models.Role, error) {
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("role not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("role not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get role: %w", err)
 	}
@@ -52,8 +53,8 @@ func (r *roleRepository) GetByName(name string) (*models.Role, error) {
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("role not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("role not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get role: %w", err)
 	}
@@ -83,6 +84,10 @@ func (r *roleRepository) List() ([]*models.Role, error) {
 			return nil, fmt.Errorf("failed to scan role: %w", err)
 		}
 		roles = append(roles, role)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating roles: %w", err)
 	}
 
 	return roles, nil

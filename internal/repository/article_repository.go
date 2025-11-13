@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"goida/internal/models"
@@ -34,7 +35,11 @@ func (r *articleRepository) CreateArticle(article *models.Article) error {
 	err := r.db.QueryRow(query, article.Title, article.Content, article.AuthorID).
 		Scan(&article.ID, &article.CreatedAt, &article.UpdatedAt)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to create article: %w", err)
+	}
+
+	return nil
 }
 
 func (r *articleRepository) GetArticle(id int) (*models.Article, error) {
@@ -48,7 +53,10 @@ func (r *articleRepository) GetArticle(id int) (*models.Article, error) {
 		&article.AuthorID, &article.CreatedAt, &article.UpdatedAt)
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("article not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get article: %w", err)
 	}
 
 	return article, nil
@@ -57,17 +65,17 @@ func (r *articleRepository) GetArticle(id int) (*models.Article, error) {
 func (r *articleRepository) UpdateArticle(id int, article *models.Article) error {
 	query := `
 		UPDATE articles 
-		SET title = $1, content = $2
+		SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $3`
 
 	result, err := r.db.Exec(query, article.Title, article.Content, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update article: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 
 	if rowsAffected == 0 {
@@ -82,12 +90,12 @@ func (r *articleRepository) DeleteArticle(id int) error {
 
 	result, err := r.db.Exec(query, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete article: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 
 	if rowsAffected == 0 {
@@ -107,7 +115,7 @@ func (r *articleRepository) ListArticles(limit, offset int) ([]*models.Article, 
 
 	rows, err := r.db.Query(query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list articles: %w", err)
 	}
 	defer rows.Close()
 
@@ -119,12 +127,16 @@ func (r *articleRepository) ListArticles(limit, offset int) ([]*models.Article, 
 			&article.ID, &article.Title, &article.Content,
 			&article.AuthorID, &article.CreatedAt, &article.UpdatedAt, &authorName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan article: %w", err)
 		}
 		if authorName.Valid {
 			article.AuthorName = authorName.String
 		}
 		articles = append(articles, article)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating articles: %w", err)
 	}
 
 	return articles, nil
@@ -140,7 +152,7 @@ func (r *articleRepository) GetArticlesByAuthor(authorID int, limit, offset int)
 
 	rows, err := r.db.Query(query, authorID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get articles by author: %w", err)
 	}
 	defer rows.Close()
 
@@ -151,9 +163,13 @@ func (r *articleRepository) GetArticlesByAuthor(authorID int, limit, offset int)
 			&article.ID, &article.Title, &article.Content,
 			&article.AuthorID, &article.CreatedAt, &article.UpdatedAt)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan article: %w", err)
 		}
 		articles = append(articles, article)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating articles: %w", err)
 	}
 
 	return articles, nil
@@ -164,5 +180,9 @@ func (r *articleRepository) CountArticlesByAuthor(authorID int) (int, error) {
 
 	var count int
 	err := r.db.QueryRow(query, authorID).Scan(&count)
-	return count, err
+	if err != nil {
+		return 0, fmt.Errorf("failed to count articles by author: %w", err)
+	}
+
+	return count, nil
 }

@@ -6,6 +6,7 @@ type Comment struct {
 	ID        int64     `json:"id" db:"id"`
 	ArticleID int       `json:"article_id" db:"article_id"`
 	UserID    int       `json:"user_id" db:"user_id"`
+	UserName  string    `json:"user_name" db:"user_name"`
 	Text      string    `json:"text" db:"text"`
 	Rating    int       `json:"rating" db:"rating"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`

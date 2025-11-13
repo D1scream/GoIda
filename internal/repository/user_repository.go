@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"goida/internal/models"
@@ -55,8 +56,8 @@ func (r *userRepository) GetByID(id int) (*models.User, error) {
 		&user.Role.ID, &user.Role.Name, &user.Role.Description, &user.Role.CreatedAt, &user.Role.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -78,8 +79,8 @@ func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 		&user.Role.ID, &user.Role.Name, &user.Role.Description, &user.Role.CreatedAt, &user.Role.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -160,6 +161,10 @@ func (r *userRepository) List(limit, offset int) ([]*models.User, error) {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
 		}
 		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %w", err)
 	}
 
 	return users, nil

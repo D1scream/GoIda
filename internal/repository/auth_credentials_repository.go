@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"goida/internal/models"
@@ -50,8 +51,8 @@ func (r *authCredentialsRepository) GetByUserID(userID int) (*models.AuthCredent
 		&credentials.CreatedAt, &credentials.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("auth credentials not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("auth credentials not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get auth credentials: %w", err)
 	}
@@ -70,8 +71,8 @@ func (r *authCredentialsRepository) GetByLogin(login string) (*models.AuthCreden
 		&credentials.CreatedAt, &credentials.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("auth credentials not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("auth credentials not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to get auth credentials: %w", err)
 	}
@@ -87,8 +88,8 @@ func (r *authCredentialsRepository) Update(userID int, credentials *models.AuthC
 
 	err := r.db.QueryRow(query, credentials.Login, credentials.Password, userID).Scan(&credentials.UpdatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("auth credentials not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("auth credentials not found: %w", err)
 		}
 		return fmt.Errorf("failed to update auth credentials: %w", err)
 	}

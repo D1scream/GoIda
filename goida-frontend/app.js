@@ -25,7 +25,7 @@ const ArticleCard = {
 		<h4>{{ article.title }}</h4>
 		<p><strong>Автор:</strong> {{ article.author_name }}</p>
 		<p><strong>Создана:</strong> {{ formatDate(article.created_at) }}</p>
-		<p><strong>Содержимое:</strong> {{ truncateText(article.content, 200) }}</p>
+		<p><strong>Содержимое:</strong> {{ article.content }}</p>
 		<p v-if="hasRating"><strong>Рейтинг:</strong> {{ article.rating_avg.toFixed(1) }} ({{ article.rating_count }})</p>
 		<div class="article-actions">
 			<button v-if="canEdit" class="btn-small btn-warning" @click="$emit('edit', article)">Редактировать</button>
@@ -46,7 +46,7 @@ const ArticleCard = {
 			<div v-else-if="comments.length === 0" class="no-data">Нет комментариев</div>
 			<div v-else>
 				<div v-for="c in comments" :key="c.id" class="comment">
-					<div class="comment-meta"><strong>Пользователь #{{ c.user_id }}</strong> · {{ formatDate(c.created_at) }} · ★ {{ c.rating }}</div>
+					<div class="comment-meta"><strong>{{ c.user_name || 'Пользователь #' + c.user_id }}</strong> · {{ formatDate(c.created_at) }} · Оценка {{ c.rating }}</div>
 					<div class="comment-text">{{ c.text }}</div>
 					<div class="comment-actions">
 						<button v-if="currentUser && currentUser.id === c.user_id" class="btn-small btn-danger" @click="deleteComment(c.id)" :disabled="deletingIds.has(c.id)">
@@ -92,9 +92,10 @@ const ArticleCard = {
 		async loadComments() {
 			this.loadingComments = true;
 			try {
-				this.comments = await api.get(`/articles/${this.article.id}/comments?limit=50`);
+				const data = await api.get(`/articles/${this.article.id}/comments?limit=50`);
+				this.comments = Array.isArray(data) ? data : [];
 			} catch (e) {
-				alert(`Ошибка загрузки комментариев: ${e.message}`);
+				this.comments = [];
 			} finally {
 				this.loadingComments = false;
 			}

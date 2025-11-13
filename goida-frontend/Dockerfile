@@ -1,12 +1,9 @@
-# Используем nginx для раздачи статических файлов
 FROM nginx:alpine
 
-# Копируем файлы фронтенда
 COPY index.html /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
 
-# Настраиваем nginx для SPA
 RUN echo 'server { \
     listen 80; \
     server_name localhost; \
