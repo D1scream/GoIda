@@ -120,8 +120,13 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateOwned(r.Context(), id64, claims.UserID, &req); err != nil {
-		if err.Error() == "not found or not owner" {
+		errMsg := err.Error()
+		if errMsg == "access denied" {
 			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+		if errMsg == "comment not found" {
+			http.Error(w, "Comment not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -146,8 +151,13 @@ func (h *CommentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteOwned(r.Context(), id64, claims.UserID); err != nil {
-		if err.Error() == "not found or not owner" {
+		errMsg := err.Error()
+		if errMsg == "access denied" {
 			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+		if errMsg == "comment not found" {
+			http.Error(w, "Comment not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusBadRequest)

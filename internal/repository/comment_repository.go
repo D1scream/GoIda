@@ -64,32 +64,44 @@ func (r *commentRepository) FindByArticle(ctx context.Context, articleID int, li
 }
 
 func (r *commentRepository) UpdateOwned(ctx context.Context, id int64, userID int, text string, rating int) error {
-	query := `UPDATE comments SET text = COALESCE(NULLIF($1, ''), text), rating = COALESCE($2, rating), updated_at = NOW() WHERE id = $3 AND user_id = $4`
-	res, err := r.db.ExecContext(ctx, query, text, sql.NullInt64{Int64: int64(rating), Valid: rating != 0}, id, userID)
+	var commentUserID int
+	err := r.db.QueryRowContext(ctx, `SELECT user_id FROM comments WHERE id = $1`, id).Scan(&commentUserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("comment not found")
+		}
+		return fmt.Errorf("failed to check comment: %w", err)
+	}
+
+	if commentUserID != userID {
+		return fmt.Errorf("access denied")
+	}
+
+	query := `UPDATE comments SET text = COALESCE(NULLIF($1, ''), text), rating = COALESCE($2, rating), updated_at = NOW() WHERE id = $3`
+	_, err = r.db.ExecContext(ctx, query, text, sql.NullInt64{Int64: int64(rating), Valid: rating != 0}, id)
 	if err != nil {
 		return fmt.Errorf("failed to update comment: %w", err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-	if n == 0 {
-		return fmt.Errorf("comment not found or not owner")
 	}
 	return nil
 }
 
 func (r *commentRepository) DeleteOwned(ctx context.Context, id int64, userID int) error {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM comments WHERE id = $1 AND user_id = $2`, id, userID)
+	var commentUserID int
+	err := r.db.QueryRowContext(ctx, `SELECT user_id FROM comments WHERE id = $1`, id).Scan(&commentUserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("comment not found")
+		}
+		return fmt.Errorf("failed to check comment: %w", err)
+	}
+
+	if commentUserID != userID {
+		return fmt.Errorf("access denied")
+	}
+
+	_, err = r.db.ExecContext(ctx, `DELETE FROM comments WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete comment: %w", err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-	if n == 0 {
-		return fmt.Errorf("comment not found or not owner")
 	}
 	return nil
 }

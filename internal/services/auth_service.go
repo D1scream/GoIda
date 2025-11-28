@@ -35,17 +35,17 @@ func NewAuthService(userRepo repository.UserRepository, authCredentialsRepo repo
 func (s *AuthService) Authenticate(login, password string) (*models.User, error) {
 	credentials, err := s.authCredentialsRepo.GetByLogin(login)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.New("invalid login")
 	}
 
 	user, err := s.userRepo.GetByID(credentials.UserID)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.New("invalid login")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(credentials.Password), []byte(password))
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.New("invalid password")
 	}
 
 	return user, nil

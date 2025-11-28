@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -120,8 +121,13 @@ func (h *ArticleHandler) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	article, err := h.articleService.UpdateArticle(id, &req, claims.UserID, claims.Role)
 	if err != nil {
 		logrus.Errorf("Failed to update article: %v", err)
-		if err.Error() == "access denied" {
+		errMsg := err.Error()
+		if errMsg == "access denied" {
 			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+		if strings.Contains(errMsg, "article not found") {
+			http.Error(w, "Article not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -150,8 +156,13 @@ func (h *ArticleHandler) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	err = h.articleService.DeleteArticle(id, claims.UserID, claims.Role)
 	if err != nil {
 		logrus.Errorf("Failed to delete article: %v", err)
-		if err.Error() == "access denied" {
+		errMsg := err.Error()
+		if errMsg == "access denied" {
 			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+		if strings.Contains(errMsg, "article not found") {
+			http.Error(w, "Article not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
